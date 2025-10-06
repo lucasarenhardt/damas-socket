@@ -4,23 +4,45 @@ import socket
 import json
 
 def enviar_mensagem(sock, tipo, dados):
-    """Codifica e envia uma mensagem no formato JSON."""
-    msg = json.dumps({"tipo": tipo, "dados": dados})
-    sock.sendall(msg.encode('utf-8'))
+    """Codifica e envia uma mensagem JSON com prefixo de 2 bytes (big-endian)."""
+    try:
+        msg = json.dumps({"tipo": tipo, "dados": dados})
+        msg_bytes = msg.encode('utf-8')
+        prefix = len(msg_bytes).to_bytes(2, byteorder='big')  # 2 bytes big-endian
+        sock.sendall(prefix + msg_bytes)
+    except (ConnectionResetError, BrokenPipeError):
+        print("Erro: Conexão com o servidor foi perdida.")
+
+def recv_all(sock, n):
+    """Lê exatamente n bytes do socket ou retorna None se a conexão fechar."""
+    data = b''
+    while len(data) < n:
+        try:
+            packet = sock.recv(n - len(data))
+        except ConnectionResetError:
+            return None
+        if not packet:
+            return None
+        data += packet
+    return data
 
 def receber_mensagem(sock):
-    """Recebe, decodifica e retorna uma mensagem JSON."""
+    """Recebe, decodifica e retorna uma mensagem JSON lendo primeiro 2 bytes de tamanho."""
     try:
-        data = sock.recv(4096)
-        if not data:
+        prefix = recv_all(sock, 2)
+        if not prefix:
             return None
-        return json.loads(data.decode('utf-8'))
+        length = int.from_bytes(prefix, byteorder='big')
+        payload = recv_all(sock, length)
+        if not payload:
+            return None
+        return json.loads(payload.decode('utf-8'))
     except (ConnectionResetError, json.JSONDecodeError):
         return None
 
 def main():
     HOST = '127.0.0.1'
-    PORT = 50000
+    PORT = 5000  # ajustado para corresponder ao servidor
 
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:

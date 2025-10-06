@@ -5,20 +5,40 @@ from jogo import Damas, Jogador
 def enviar_mensagem(sock, tipo, dados):
     try:
         msg = json.dumps({"tipo": tipo, "dados": dados})
-        sock.sendall(msg.encode('utf-8'))
+        msg_bytes = msg.encode('utf-8')
+        prefix = len(msg_bytes).to_bytes(2, byteorder='big')
+        sock.sendall(prefix + msg_bytes)
     except (ConnectionResetError, BrokenPipeError):
         print("Erro: Conexão com o cliente foi perdida.")
 
+def recv_all(sock, n):
+    """Lê exatamente n bytes do socket ou retorna None se a conexão fechar."""
+    data = b''
+    while len(data) < n:
+        try:
+            packet = sock.recv(n - len(data))
+        except ConnectionResetError:
+            return None
+        if not packet:
+            return None
+        data += packet
+    return data
+
 def receber_mensagem(sock):
     try:
-        data = sock.recv(4096)
-        if not data: return None
-        return json.loads(data.decode('utf-8'))
+        prefix = recv_all(sock, 2)
+        if not prefix:
+            return None
+        length = int.from_bytes(prefix, byteorder='big')
+        payload = recv_all(sock, length)
+        if not payload:
+            return None
+        return json.loads(payload.decode('utf-8'))
     except (ConnectionResetError, json.JSONDecodeError):
         return None
 
 def main():
-    endereco = ('127.0.0.1', 50000)
+    endereco = ('127.0.0.1', 5000)
     
     socket_conexao = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     socket_conexao.bind(endereco)
@@ -53,12 +73,10 @@ def main():
             jogada_valida = False
             while not jogada_valida:
                 try:
-                    jogada = input("Digite sua jogada (formato: linha,coluna linha,coluna): ")
-                    pos_ini_str, pos_fin_str = jogada.split()
-                    pos_inicial = tuple(map(int, pos_ini_str.split(',')))
-                    pos_final = tuple(map(int, pos_fin_str.split(',')))
-                    
-                    erro = jogo.validar_e_mover(pos_inicial, pos_final)
+                    jogada = input("Digite sua jogada (ex.: '6,1 4,3 2,5' para várias capturas): ")
+                    partes = jogada.split()
+                    posicoes = [tuple(map(int, p.split(','))) for p in partes]
+                    erro = jogo.validar_e_mover(posicoes)
                     if erro:
                         print(f"ERRO: {erro}")
                     else:
@@ -83,11 +101,9 @@ def main():
                     break
                 
                 try:
-                    pos_ini_str, pos_fin_str = msg_jogada["dados"].split()
-                    pos_inicial = tuple(map(int, pos_ini_str.split(',')))
-                    pos_final = tuple(map(int, pos_fin_str.split(',')))
-                    erro = jogo.validar_e_mover(pos_inicial, pos_final)
-                    
+                    partes = msg_jogada["dados"].split()
+                    posicoes = [tuple(map(int, p.split(','))) for p in partes]
+                    erro = jogo.validar_e_mover(posicoes)
                     if erro:
                         enviar_mensagem(sock_dados, "erro_jogada", erro)
                         enviar_mensagem(sock_dados, "estado_jogo", {
