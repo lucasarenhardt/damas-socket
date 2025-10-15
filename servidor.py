@@ -12,7 +12,6 @@ def enviar_mensagem(sock, tipo, dados):
         print("Erro: Conexão com o cliente foi perdida.")
 
 def recv_all(sock, n):
-    """Lê exatamente n bytes do socket ou retorna None se a conexão fechar."""
     data = b''
     while len(data) < n:
         try:
@@ -123,7 +122,10 @@ def main():
             jogo.trocar_turno()
 
     board_final = jogo.tabuleiro.to_string()
-    msg_final = f"FIM DE JOGO! O vencedor é {vencedor.nome}!"
+    if vencedor == "EMPATE":
+        msg_final = "FIM DE JOGO! O jogo terminou em EMPATE! Nenhum jogador tem movimentos válidos."
+    else:
+        msg_final = f"FIM DE JOGO! O vencedor é {vencedor.nome}!"
     print(board_final)
     print(msg_final)
     enviar_mensagem(sock_dados, "fim_de_jogo", {"tabuleiro": board_final, "mensagem": msg_final})
