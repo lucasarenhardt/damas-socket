@@ -37,16 +37,18 @@ def receber_mensagem(sock):
         return None
 
 def main():
-    endereco = ('127.0.0.1', 5000)
+    endereco = ('127.0.0.1', 50002)
     
     socket_conexao = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     socket_conexao.bind(endereco)
     socket_conexao.listen(1)
-    print(f"Servidor de Damas iniciado em {endereco[0]}:{endereco[1]}.")
-    print("Aguardando um jogador remoto se conectar...")
+    print(f"\nServidor de Damas iniciado em {endereco[0]}:{endereco[1]}.")
+    print("Aguardando um jogador remoto se conectar...\n")
 
     sock_dados, info_cliente = socket_conexao.accept()
-    print(f"Jogador Remoto ({info_cliente}) conectou-se.")
+    print(f"Jogador Remoto ({info_cliente}) conectou-se.\n")
+
+    print("Você é o Jogador Servidor (Pretas 'x').")
 
     jogador_servidor = Jogador('p', "Jogador Servidor (Pretas)")
     jogador_cliente = Jogador('b', "Jogador Cliente (Brancas)")
@@ -54,37 +56,43 @@ def main():
 
     enviar_mensagem(sock_dados, "info", "Você é o Jogador Cliente (Brancas 'o'). Você começa.")
     
+    print("\n" + ("-"*21))
+    print(jogo.tabuleiro.to_string())
+
     vencedor = None
     while not vencedor:
         jogador_da_vez = jogo.jogador_atual
 
         if jogador_da_vez.nome == "Jogador Servidor (Pretas)":
-            print("\n" + ("-"*30))
+            print("\n" + ("-"*21))
             print(jogo.tabuleiro.to_string())
-            print(f"--- TURNO DO JOGADOR LOCAL (Servidor - Peças 'x') ---")
+            print("Sua vez de jogar.")
             
             enviar_mensagem(sock_dados, "estado_jogo", {
                 "tabuleiro": jogo.tabuleiro.to_string(),
                 "sua_vez": False,
-                "info": "Aguardando a jogada do Jogador Servidor."
+                "info": "Turno do Jogador Servidor. Aguardando jogada..."
             })
 
             jogada_valida = False
             while not jogada_valida:
                 try:
-                    jogada = input("Digite sua jogada (ex.: '6,1 4,3 2,5' para várias capturas): ")
+                    jogada = input("Digite sua jogada: ")
                     partes = jogada.split()
                     posicoes = [tuple(map(int, p.split(','))) for p in partes]
                     erro = jogo.validar_e_mover(posicoes)
                     if erro:
-                        print(f"ERRO: {erro}")
+                        print(f"ERRO: {erro} Tente novamente.\n")
                     else:
                         jogada_valida = True
                 except (ValueError, IndexError):
-                    print("ERRO: Formato de entrada inválido.")
+                    print("ERRO: Formato de entrada inválido. Tente novamente.\n")
+            
+            print("\n" + ("-"*21))
+            print(jogo.tabuleiro.to_string())
 
         else:
-            print("\nTurno do Jogador Cliente. Aguardando jogada remota...")
+            print("Turno do Jogador Cliente. Aguardando jogada...")
             enviar_mensagem(sock_dados, "estado_jogo", {
                 "tabuleiro": jogo.tabuleiro.to_string(),
                 "sua_vez": True,
@@ -105,15 +113,10 @@ def main():
                     erro = jogo.validar_e_mover(posicoes)
                     if erro:
                         enviar_mensagem(sock_dados, "erro_jogada", erro)
-                        enviar_mensagem(sock_dados, "estado_jogo", {
-                            "tabuleiro": jogo.tabuleiro.to_string(),
-                            "sua_vez": True,
-                            "info": "Jogada inválida. Tente novamente."
-                        })
                     else:
                         jogada_valida = True
                 except (ValueError, IndexError):
-                    enviar_mensagem(sock_dados, "erro_jogada", "Formato de jogada inválido enviado pelo cliente.")
+                    enviar_mensagem(sock_dados, "erro_jogada", "Formato de entrada inválido.")
 
             if not jogada_valida: break
 

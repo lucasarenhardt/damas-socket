@@ -93,11 +93,7 @@ class Casa:
 
     @posicao.setter
     def posicao(self, valor):
-        if (
-            not isinstance(valor, tuple)
-            or len(valor) != 2
-            or not all(isinstance(v, int) for v in valor)
-        ):
+        if (not isinstance(valor, tuple) or len(valor) != 2 or not all(isinstance(v, int) for v in valor)):
             raise ValueError("posicao deve ser uma tupla (linha, coluna) de inteiros")
         linha, coluna = valor
         if not (0 <= linha < 8 and 0 <= coluna < 8):
@@ -206,33 +202,25 @@ class Damas:
             return self._jogador_branco
 
     def _tem_movimentos_validos(self, jogador):
-        """
-        Verifica se o jogador tem pelo menos um movimento válido.
-        Retorna True se houver algum movimento possível, False caso contrário.
-        """
         for peca in jogador.pecas:
             if not peca.casa:
                 continue
             l_ini, c_ini = peca.casa.posicao
             
-            # Testar todos os movimentos possíveis (diagonais)
             direcoes = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
             
             for dl, dc in direcoes:
-                # Para peões, verificar apenas direção permitida
                 if peca.tipo == 'p':
                     direcao_peca = -1 if peca.cor == 'b' else 1
                     if dl != direcao_peca:
                         continue
                 
-                # Testar movimento simples (1 casa)
                 l_dest, c_dest = l_ini + dl, c_ini + dc
                 if 0 <= l_dest < 8 and 0 <= c_dest < 8:
                     casa_dest = self.tabuleiro.get_casa(l_dest, c_dest)
                     if casa_dest and not casa_dest.conteudo:
                         return True
                 
-                # Testar captura (2 casas) para peões
                 if peca.tipo == 'p':
                     l_dest2, c_dest2 = l_ini + 2*dl, c_ini + 2*dc
                     if 0 <= l_dest2 < 8 and 0 <= c_dest2 < 8:
@@ -242,8 +230,7 @@ class Damas:
                             peca_meio = casa_meio.conteudo
                             if peca_meio and peca_meio.cor != peca.cor and not casa_dest2.conteudo:
                                 return True
-                
-                # Para damas, testar movimentos em todas as distâncias
+            
                 if peca.tipo == 'd':
                     pecas_encontradas = []
                     for dist in range(1, 8):
@@ -255,65 +242,42 @@ class Damas:
                             pecas_encontradas.append(casa_test.conteudo)
                             if len(pecas_encontradas) > 1:
                                 break
-                            # Se encontrou peça adversária, ainda pode ter movimento de captura além dela
                             if pecas_encontradas[0].cor != peca.cor:
                                 continue
                             else:
                                 break
                         else:
-                            # Casa vazia encontrada
                             if len(pecas_encontradas) == 0:
-                                return True  # movimento simples
+                                return True
                             elif len(pecas_encontradas) == 1 and pecas_encontradas[0].cor != peca.cor:
-                                return True  # captura válida
-        
+                                return True
         return False
 
     def verificar_vitoria(self):
-        """
-        Verifica condições de vitória ou empate.
-        Retorna:
-        - jogador vencedor se houver vitória
-        - "EMPATE" se for empate
-        - None se o jogo continua
-        """
-        # Verifica se adversário perdeu todas as peças
         if not self._get_adversario().pecas:
             return self.jogador_atual
         
-        # Verifica se jogadores têm movimentos válidos
         jogador_atual_pode_mover = self._tem_movimentos_validos(self.jogador_atual)
         adversario_pode_mover = self._tem_movimentos_validos(self._get_adversario())
         
-        # Se nenhum dos dois pode mover: EMPATE
         if not jogador_atual_pode_mover and not adversario_pode_mover:
             return "EMPATE"
         
-        # Se apenas o jogador atual não pode mover: adversário vence
         if not jogador_atual_pode_mover:
             return self._get_adversario()
         
-        # Se apenas o adversário não pode mover: jogador atual vence
         if not adversario_pode_mover:
             return self.jogador_atual
         
-        # Jogo continua
         return None
 
     def validar_e_mover(self, posicoes):
-        """
-        Recebe uma lista de posições [(l0,c0),(l1,c1),...].
-        Valida e executa cada segmento em sequência, permitindo múltiplas capturas.
-        Retorna None se OK ou string com erro.
-        """
-        # aceitar também as chamadas com dois argumentos passadas acidentalmente
         if not isinstance(posicoes, list) and isinstance(posicoes, tuple):
             return "Formato de posições inválido."
 
         if len(posicoes) < 2:
             return "É necessário informar pelo menos posição inicial e final."
 
-        # Validar formato de todas as posições ANTES de fazer qualquer mudança
         try:
             for pos in posicoes:
                 if not isinstance(pos, tuple) or len(pos) != 2:
@@ -334,7 +298,6 @@ class Damas:
 
         adversario = self._get_adversario()
         
-        # FASE 1: VALIDAR TODOS OS MOVIMENTOS sem modificar o tabuleiro
         movimentos_validados = []
         atual_l, atual_c = l_ini, c_ini
         tipo_peca_atual = peca.tipo
@@ -345,17 +308,14 @@ class Damas:
             if not casa_final:
                 return "Posição final inválida."
             
-            # verificar se a casa final está ocupada (ignorando casas já processadas nesta sequência)
             ocupada_por_outra = False
             if casa_final.conteudo is not None:
-                # verificar se é a própria peça que está se movendo
                 if casa_final.posicao != (l_ini, c_ini):
                     ocupada_por_outra = True
             
             if ocupada_por_outra:
                 return "Posição final já está ocupada."
 
-            # validar segmento conforme tipo atual da peça
             if tipo_peca_atual == 'p':
                 valido, peca_capturada, msg = self._validar_movimento_peao(peca, atual_l, atual_c, l_fin, c_fin)
             else:
@@ -364,40 +324,33 @@ class Damas:
             if not valido:
                 return msg or "Movimento inválido."
 
-            # se houver mais de um segmento (sequência), exigimos que cada segmento seja captura
             if len(posicoes) > 2 and peca_capturada is None:
                 return "Movimento inválido: múltiplos movimentos sem captura não são permitidos."
 
             movimentos_validados.append((l_fin, c_fin, peca_capturada))
             atual_l, atual_c = l_fin, c_fin
             
-            # atualizar tipo se houver promoção no meio da sequência
             if tipo_peca_atual == 'p':
                 if (peca.cor == 'b' and l_fin == 0) or (peca.cor == 'p' and l_fin == 7):
                     tipo_peca_atual = 'd'
 
-        # FASE 2: APLICAR TODOS OS MOVIMENTOS (já validados)
         atual_casa = casa_inicial
         
         for l_fin, c_fin, peca_capturada in movimentos_validados:
             casa_final = self.tabuleiro.get_casa(l_fin, c_fin)
             
-            # aplicar captura (se houver)
             if peca_capturada:
                 casa_meio = peca_capturada.casa
                 if casa_meio:
                     casa_meio.conteudo = None
                 adversario.remover_peca(peca_capturada)
 
-            # limpar a casa atual antes de mover para evitar que a mesma peça fique referenciada em duas casas
             if atual_casa.conteudo is peca:
                 atual_casa.conteudo = None
 
-            # mover peça para casa_final
             casa_final.conteudo = peca
             atual_casa = casa_final
 
-        # promoção de peão ao final da sequência
         if peca.tipo == 'p':
             l_fin_final = atual_casa.posicao[0]
             if (peca.cor == 'b' and l_fin_final == 0) or (peca.cor == 'p' and l_fin_final == 7):
@@ -410,10 +363,8 @@ class Damas:
         d_c = c_fin - c_ini
         dist_l, dist_c = abs(d_l), abs(d_c)
         direcao = -1 if peca.cor == 'b' else 1
-        # movimento simples (apenas um passo diagonal na direção)
         if dist_l == 1 and dist_c == 1 and d_l == direcao:
             return True, None, None
-        # captura: pulo de duas casas com peça adversária no meio
         if dist_l == 2 and dist_c == 2 and d_l == direcao * 2:
             l_meio, c_meio = (l_ini + l_fin) // 2, (c_ini + c_fin) // 2
             casa_meio = self.tabuleiro.get_casa(l_meio, c_meio)
@@ -437,10 +388,8 @@ class Damas:
             casa = self.tabuleiro.get_casa(l_ini + k * step_l, c_ini + k * step_c)
             if casa and casa.conteudo:
                 pecas_no_caminho.append(casa.conteudo)
-        # movimento simples: caminho livre
         if not pecas_no_caminho:
             return True, None, None
-        # captura: exatamente uma peça adversária no caminho
         if len(pecas_no_caminho) == 1 and pecas_no_caminho[0].cor != peca.cor:
             return True, pecas_no_caminho[0], None
         return False, None, "Movimento de Dama bloqueado ou captura inválida."
