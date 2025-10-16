@@ -2,6 +2,7 @@ import socket
 import json
 
 def enviar_mensagem(sock, tipo, dados):
+    """Envia mensagem JSON com prefixo de tamanho (2 bytes)"""
     try:
         msg = json.dumps({"tipo": tipo, "dados": dados})
         msg_bytes = msg.encode('utf-8')
@@ -11,6 +12,7 @@ def enviar_mensagem(sock, tipo, dados):
         print("Erro: Conexão com o servidor foi perdida.")
 
 def recv_all(sock, n):
+    """Recebe exatamente n bytes do socket"""
     data = b''
     while len(data) < n:
         try:
@@ -23,6 +25,7 @@ def recv_all(sock, n):
     return data
 
 def receber_mensagem(sock):
+    """Recebe mensagem JSON com prefixo de tamanho"""
     try:
         prefix = recv_all(sock, 2)
         if not prefix:
@@ -36,9 +39,11 @@ def receber_mensagem(sock):
         return None
 
 def main():
+    """Função principal do cliente - conecta ao servidor e processa jogo"""
     HOST = '127.0.0.1'
     PORT = 50002
 
+    # Conecta ao servidor
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         client_socket.connect((HOST, PORT))
@@ -47,10 +52,12 @@ def main():
         print("Não foi possível se conectar ao servidor.")
         return
 
+    # Recebe mensagem inicial
     msg_inicial = receber_mensagem(client_socket)
     if msg_inicial and msg_inicial["tipo"] == "info":
         print(msg_inicial["dados"])
     
+    # Loop principal do jogo
     game_over = False
     while not game_over:
         mensagem = receber_mensagem(client_socket)
@@ -62,20 +69,24 @@ def main():
         tipo = mensagem.get("tipo")
         dados = mensagem.get("dados")
 
+        # Processa estado do jogo
         if tipo == "estado_jogo":
             print("\n" + ("-"*21))
             print(dados["tabuleiro"])
             print(dados["info"])
             
+            # Se é o turno do cliente, solicita jogada
             if dados["sua_vez"]:
                 jogada = input("Digite sua jogada: ")
                 enviar_mensagem(client_socket, "jogada", jogada)
         
+        # Processa erro na jogada
         elif tipo == "erro_jogada":
             print(f"ERRO: {dados} Tente novamente.")
             jogada = input("\nDigite sua jogada: ")
             enviar_mensagem(client_socket, "jogada", jogada)
 
+        # Processa fim de jogo
         elif tipo == "fim_de_jogo":
             print(dados["tabuleiro"])
             print(f"\n{dados['mensagem']}")

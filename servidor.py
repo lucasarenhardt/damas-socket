@@ -3,6 +3,7 @@ import json
 from jogo import Damas, Jogador
 
 def enviar_mensagem(sock, tipo, dados):
+    """Envia mensagem JSON com prefixo de tamanho (2 bytes)"""
     try:
         msg = json.dumps({"tipo": tipo, "dados": dados})
         msg_bytes = msg.encode('utf-8')
@@ -12,6 +13,7 @@ def enviar_mensagem(sock, tipo, dados):
         print("Erro: Conexão com o cliente foi perdida.")
 
 def recv_all(sock, n):
+    """Recebe exatamente n bytes do socket"""
     data = b''
     while len(data) < n:
         try:
@@ -24,6 +26,7 @@ def recv_all(sock, n):
     return data
 
 def receber_mensagem(sock):
+    """Recebe mensagem JSON com prefixo de tamanho"""
     try:
         prefix = recv_all(sock, 2)
         if not prefix:
@@ -37,19 +40,23 @@ def receber_mensagem(sock):
         return None
 
 def main():
+    """Função principal do servidor - gerencia conexão e loop do jogo"""
     endereco = ('127.0.0.1', 50002)
     
+    # Cria e configura socket servidor
     socket_conexao = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     socket_conexao.bind(endereco)
     socket_conexao.listen(1)
     print(f"\nServidor de Damas iniciado em {endereco[0]}:{endereco[1]}.")
     print("Aguardando um jogador remoto se conectar...\n")
 
+    # Aceita conexão do cliente
     sock_dados, info_cliente = socket_conexao.accept()
     print(f"Jogador Remoto ({info_cliente}) conectou-se.\n")
 
     print("Você é o Jogador Servidor (Pretas 'x').")
 
+    # Inicializa o jogo
     jogador_servidor = Jogador('p', "Jogador Servidor (Pretas)")
     jogador_cliente = Jogador('b', "Jogador Cliente (Brancas)")
     jogo = Damas(jogador_cliente, jogador_servidor)
@@ -63,17 +70,20 @@ def main():
     while not vencedor:
         jogador_da_vez = jogo.jogador_atual
 
+        # Turno do servidor (jogador local)
         if jogador_da_vez.nome == "Jogador Servidor (Pretas)":
             print("\n" + ("-"*21))
             print(jogo.tabuleiro.to_string())
             print("Sua vez de jogar.")
             
+            # Notifica cliente que é turno do servidor
             enviar_mensagem(sock_dados, "estado_jogo", {
                 "tabuleiro": jogo.tabuleiro.to_string(),
                 "sua_vez": False,
                 "info": "Turno do Jogador Servidor. Aguardando jogada..."
             })
 
+            # Loop de validação de jogada
             jogada_valida = False
             while not jogada_valida:
                 try:
@@ -88,17 +98,22 @@ def main():
                 except (ValueError, IndexError):
                     print("ERRO: Formato de entrada inválido. Tente novamente.\n")
             
+            # Mostra tabuleiro após jogada do servidor
             print("\n" + ("-"*21))
             print(jogo.tabuleiro.to_string())
 
+        # Turno do cliente (jogador remoto)
         else:
             print("Turno do Jogador Cliente. Aguardando jogada...")
+            
+            # Envia estado do jogo e solicita jogada
             enviar_mensagem(sock_dados, "estado_jogo", {
                 "tabuleiro": jogo.tabuleiro.to_string(),
                 "sua_vez": True,
                 "info": "Sua vez de jogar."
             })
 
+            # Aguarda e valida jogada do cliente
             jogada_valida = False
             while not jogada_valida:
                 msg_jogada = receber_mensagem(sock_dados)
@@ -120,10 +135,12 @@ def main():
 
             if not jogada_valida: break
 
+        # Verifica condições de vitória/empate
         vencedor = jogo.verificar_vitoria()
         if not vencedor:
             jogo.trocar_turno()
 
+    # Exibe resultado final e notifica cliente
     board_final = jogo.tabuleiro.to_string()
     if vencedor == "EMPATE":
         msg_final = "FIM DE JOGO! O jogo terminou em EMPATE! Nenhum jogador tem movimentos válidos."
@@ -133,6 +150,7 @@ def main():
     print(msg_final)
     enviar_mensagem(sock_dados, "fim_de_jogo", {"tabuleiro": board_final, "mensagem": msg_final})
 
+    # Encerra conexões
     sock_dados.close()
     socket_conexao.close()
     print("Servidor encerrado.")

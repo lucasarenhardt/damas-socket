@@ -1,7 +1,14 @@
 import os
 
 class Jogador:
+    """Representa um jogador do jogo de damas"""
+    
     def __init__(self, cor, nome):
+        """
+        Inicializa um jogador
+        cor: 'b' para brancas ou 'p' para pretas
+        nome: identificação do jogador
+        """
         if cor not in ("b", "p"):
             raise ValueError("cor inválida: use 'b' (brancas) ou 'p' (pretas)")
         self._cor = cor
@@ -32,7 +39,13 @@ class Jogador:
 
 
 class Peca:
+    """Representa uma peça do jogo (pedra ou dama)"""
+    
     def __init__(self, tipo, cor):
+        """
+        tipo: 'p' para pedra ou 'd' para dama
+        cor: 'b' para brancas ou 'p' para pretas
+        """
         self._tipo = None
         self._cor = None
         self._casa = None
@@ -46,7 +59,7 @@ class Peca:
     @tipo.setter
     def tipo(self, valor):
         if valor not in ("p", "d"):
-            raise ValueError("tipo inválido: use 'p' (peão) ou 'd' (dama)")
+            raise ValueError("tipo inválido: use 'p' (pedra) ou 'd' (dama)")
         self._tipo = valor
 
     @property
@@ -71,6 +84,7 @@ class Peca:
 
     @property
     def simbolo(self):
+        """Retorna o símbolo visual da peça (o/O para brancas, x/X para pretas)"""
         if self._tipo == "p":
             return "o" if self._cor == "b" else "x"
         else:
@@ -81,6 +95,8 @@ class Peca:
 
 
 class Casa:
+    """Representa uma casa do tabuleiro"""
+    
     def __init__(self, posicao):
         self._posicao = None
         self._cor = None
@@ -99,6 +115,7 @@ class Casa:
         if not (0 <= linha < 8 and 0 <= coluna < 8):
             raise ValueError("posicao fora do tabuleiro")
         self._posicao = (linha, coluna)
+        # Define a cor da casa baseada na posição (padrão xadrez)
         self._cor = "p" if (linha + coluna) % 2 else "b"
 
     @property
@@ -126,6 +143,8 @@ class Casa:
 
 
 class Tabuleiro:
+    """Gerencia o tabuleiro 8x8 e a disposição inicial das peças"""
+    
     def __init__(self, jogador_branco, jogador_preto):
         self.jogador_branco = jogador_branco
         self.jogador_preto = jogador_preto
@@ -136,16 +155,19 @@ class Tabuleiro:
         return self._casas
 
     def _criar_tabuleiro_inicial(self):
+        """Cria o tabuleiro 8x8 e posiciona as peças iniciais"""
         tabuleiro = []
         for i in range(8):
             linha = []
             for j in range(8):
                 casa = Casa((i, j))
+                # Coloca peças pretas nas 3 primeiras linhas (casas pretas)
                 if casa.cor == "p":
                     if i in (0, 1, 2):
                         peca = Peca("p", self.jogador_preto.cor)
                         self.jogador_preto.adicionar_peca(peca)
                         casa.conteudo = peca
+                    # Coloca peças brancas nas 3 últimas linhas (casas pretas)
                     elif i in (5, 6, 7):
                         peca = Peca("p", self.jogador_branco.cor)
                         self.jogador_branco.adicionar_peca(peca)
@@ -160,6 +182,7 @@ class Tabuleiro:
         return self._casas[linha][coluna]
 
     def to_string(self):
+        """Retorna representação visual do tabuleiro como string"""
         board_str = "   0 1 2 3 4 5 6 7\n  -----------------\n"
         for i, linha in enumerate(self._casas):
             board_str += f"{i}| "
@@ -171,7 +194,10 @@ class Tabuleiro:
 
 
 class Damas:
+    """Controla a lógica do jogo de damas"""
+    
     def __init__(self, jogador1, jogador2):
+        """Inicializa o jogo com dois jogadores (brancas começam)"""
         if jogador1.cor == 'b':
             self._jogador_branco = jogador1
             self._jogador_preto = jogador2
@@ -202,25 +228,30 @@ class Damas:
             return self._jogador_branco
 
     def _tem_movimentos_validos(self, jogador):
+        """Verifica se o jogador possui algum movimento válido disponível"""
         for peca in jogador.pecas:
             if not peca.casa:
                 continue
             l_ini, c_ini = peca.casa.posicao
             
+            # Todas as 4 direções diagonais possíveis
             direcoes = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
             
             for dl, dc in direcoes:
+                # Peões só se movem em uma direção
                 if peca.tipo == 'p':
                     direcao_peca = -1 if peca.cor == 'b' else 1
                     if dl != direcao_peca:
                         continue
                 
+                # Verifica movimento simples
                 l_dest, c_dest = l_ini + dl, c_ini + dc
                 if 0 <= l_dest < 8 and 0 <= c_dest < 8:
                     casa_dest = self.tabuleiro.get_casa(l_dest, c_dest)
                     if casa_dest and not casa_dest.conteudo:
                         return True
                 
+                # Verifica captura para peões
                 if peca.tipo == 'p':
                     l_dest2, c_dest2 = l_ini + 2*dl, c_ini + 2*dc
                     if 0 <= l_dest2 < 8 and 0 <= c_dest2 < 8:
@@ -231,6 +262,7 @@ class Damas:
                             if peca_meio and peca_meio.cor != peca.cor and not casa_dest2.conteudo:
                                 return True
             
+                # Verifica movimentos da dama em qualquer distância
                 if peca.tipo == 'd':
                     pecas_encontradas = []
                     for dist in range(1, 8):
@@ -254,15 +286,22 @@ class Damas:
         return False
 
     def verificar_vitoria(self):
+        """
+        Verifica condições de vitória ou empate
+        Retorna: jogador vencedor, "EMPATE" ou None (jogo continua)
+        """
+        # Vitória por captura de todas as peças
         if not self._get_adversario().pecas:
             return self.jogador_atual
         
         jogador_atual_pode_mover = self._tem_movimentos_validos(self.jogador_atual)
         adversario_pode_mover = self._tem_movimentos_validos(self._get_adversario())
         
+        # Empate: nenhum jogador pode se mover
         if not jogador_atual_pode_mover and not adversario_pode_mover:
             return "EMPATE"
         
+        # Vitória por bloqueio
         if not jogador_atual_pode_mover:
             return self._get_adversario()
         
@@ -272,12 +311,18 @@ class Damas:
         return None
 
     def validar_e_mover(self, posicoes):
+        """
+        Valida e executa uma sequência de movimentos
+        posicoes: lista de tuplas [(linha_inicial, coluna_inicial), (linha_final, coluna_final), ...]
+        Retorna: mensagem de erro ou None se movimento foi válido
+        """
         if not isinstance(posicoes, list) and isinstance(posicoes, tuple):
             return "Formato de posições inválido."
 
         if len(posicoes) < 2:
             return "É necessário informar pelo menos posição inicial e final."
 
+        # Valida formato das posições
         try:
             for pos in posicoes:
                 if not isinstance(pos, tuple) or len(pos) != 2:
@@ -288,6 +333,7 @@ class Damas:
         except (ValueError, TypeError):
             return "Erro ao processar as posições. Verifique o formato."
 
+        # Valida posição inicial e peça
         l_ini, c_ini = posicoes[0]
         casa_inicial = self.tabuleiro.get_casa(l_ini, c_ini)
         if not casa_inicial or not casa_inicial.conteudo:
@@ -298,6 +344,7 @@ class Damas:
 
         adversario = self._get_adversario()
         
+        # Valida cada movimento da sequência
         movimentos_validados = []
         atual_l, atual_c = l_ini, c_ini
         tipo_peca_atual = peca.tipo
@@ -308,6 +355,7 @@ class Damas:
             if not casa_final:
                 return "Posição final inválida."
             
+            # Verifica se destino está ocupado
             ocupada_por_outra = False
             if casa_final.conteudo is not None:
                 if casa_final.posicao != (l_ini, c_ini):
@@ -316,6 +364,7 @@ class Damas:
             if ocupada_por_outra:
                 return "Posição final já está ocupada."
 
+            # Valida movimento baseado no tipo da peça
             if tipo_peca_atual == 'p':
                 valido, peca_capturada, msg = self._validar_movimento_peao(peca, atual_l, atual_c, l_fin, c_fin)
             else:
@@ -324,33 +373,39 @@ class Damas:
             if not valido:
                 return msg or "Movimento inválido."
 
+            # Múltiplos movimentos só são permitidos em capturas encadeadas
             if len(posicoes) > 2 and peca_capturada is None:
                 return "Movimento inválido: múltiplos movimentos sem captura não são permitidos."
 
             movimentos_validados.append((l_fin, c_fin, peca_capturada))
             atual_l, atual_c = l_fin, c_fin
             
+            # Checa promoção a dama
             if tipo_peca_atual == 'p':
                 if (peca.cor == 'b' and l_fin == 0) or (peca.cor == 'p' and l_fin == 7):
                     tipo_peca_atual = 'd'
 
+        # Executa todos os movimentos validados
         atual_casa = casa_inicial
         
         for l_fin, c_fin, peca_capturada in movimentos_validados:
             casa_final = self.tabuleiro.get_casa(l_fin, c_fin)
             
+            # Remove peça capturada
             if peca_capturada:
                 casa_meio = peca_capturada.casa
                 if casa_meio:
                     casa_meio.conteudo = None
                 adversario.remover_peca(peca_capturada)
 
+            # Move a peça
             if atual_casa.conteudo is peca:
                 atual_casa.conteudo = None
 
             casa_final.conteudo = peca
             atual_casa = casa_final
 
+        # Promove a dama se atingiu a última linha
         if peca.tipo == 'p':
             l_fin_final = atual_casa.posicao[0]
             if (peca.cor == 'b' and l_fin_final == 0) or (peca.cor == 'p' and l_fin_final == 7):
@@ -359,12 +414,20 @@ class Damas:
         return None
 
     def _validar_movimento_peao(self, peca, l_ini, c_ini, l_fin, c_fin):
+        """
+        Valida movimento de peão
+        Retorna: (válido: bool, peça_capturada: Peca|None, mensagem_erro: str|None)
+        """
         d_l = l_fin - l_ini
         d_c = c_fin - c_ini
         dist_l, dist_c = abs(d_l), abs(d_c)
         direcao = -1 if peca.cor == 'b' else 1
+        
+        # Movimento simples (1 casa diagonal)
         if dist_l == 1 and dist_c == 1 and d_l == direcao:
             return True, None, None
+        
+        # Captura (2 casas diagonais)
         if dist_l == 2 and dist_c == 2 and d_l == direcao * 2:
             l_meio, c_meio = (l_ini + l_fin) // 2, (c_ini + c_fin) // 2
             casa_meio = self.tabuleiro.get_casa(l_meio, c_meio)
@@ -373,23 +436,38 @@ class Damas:
                 return True, peca_meio, None
             else:
                 return False, None, "Captura inválida. Não há peça adversária para capturar."
-        return False, None, "Movimento inválido para peão."
+        return False, None, "Movimento inválido para pedra."
 
     def _validar_movimento_dama(self, peca, l_ini, c_ini, l_fin, c_fin):
+        """
+        Valida movimento de dama (qualquer distância diagonal)
+        Retorna: (válido: bool, peça_capturada: Peca|None, mensagem_erro: str|None)
+        """
         d_l = l_fin - l_ini
         d_c = c_fin - c_ini
         dist = abs(d_l)
+        
+        # Dama deve se mover na diagonal
         if dist == 0 or dist != abs(d_c):
             return False, None, "Dama deve mover-se na diagonal."
+        
+        # Calcula direção do movimento
         step_l = 1 if d_l > 0 else -1
         step_c = 1 if d_c > 0 else -1
+        
+        # Verifica todas as casas no caminho
         pecas_no_caminho = []
         for k in range(1, dist):
             casa = self.tabuleiro.get_casa(l_ini + k * step_l, c_ini + k * step_c)
             if casa and casa.conteudo:
                 pecas_no_caminho.append(casa.conteudo)
+        
+        # Movimento livre (sem peças no caminho)
         if not pecas_no_caminho:
             return True, None, None
+        
+        # Captura (exatamente uma peça adversária no caminho)
         if len(pecas_no_caminho) == 1 and pecas_no_caminho[0].cor != peca.cor:
             return True, pecas_no_caminho[0], None
+        
         return False, None, "Movimento de Dama bloqueado ou captura inválida."
