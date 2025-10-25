@@ -415,7 +415,7 @@ class Damas:
 
     def _validar_movimento_pedra(self, peca, l_ini, c_ini, l_fin, c_fin):
         """
-        Valida movimento de peão
+        Valida movimento de pedra
         Retorna: (válido: bool, peça_capturada: Peca|None, mensagem_erro: str|None)
         """
         d_l = l_fin - l_ini
