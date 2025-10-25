@@ -366,7 +366,7 @@ class Damas:
 
             # Valida movimento baseado no tipo da peça
             if tipo_peca_atual == 'p':
-                valido, peca_capturada, msg = self._validar_movimento_peao(peca, atual_l, atual_c, l_fin, c_fin)
+                valido, peca_capturada, msg = self._validar_movimento_pedra(peca, atual_l, atual_c, l_fin, c_fin)
             else:
                 valido, peca_capturada, msg = self._validar_movimento_dama(peca, atual_l, atual_c, l_fin, c_fin)
 
@@ -413,7 +413,7 @@ class Damas:
 
         return None
 
-    def _validar_movimento_peao(self, peca, l_ini, c_ini, l_fin, c_fin):
+    def _validar_movimento_pedra(self, peca, l_ini, c_ini, l_fin, c_fin):
         """
         Valida movimento de peão
         Retorna: (válido: bool, peça_capturada: Peca|None, mensagem_erro: str|None)
