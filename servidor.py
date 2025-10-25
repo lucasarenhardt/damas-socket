@@ -54,6 +54,24 @@ def main():
     sock_dados, info_cliente = socket_conexao.accept()
     print(f"Jogador Remoto ({info_cliente}) conectou-se.\n")
 
+    print("="*65)
+    print("                        INSTRUÇÕES DO JOGO")
+    print("="*65)
+    print("")
+    print("  FORMATO DA JOGADA:")
+    print("    Digite: linha,coluna linha,coluna")
+    print("    Exemplo: 2,1 3,2")
+    print("")
+    print("  EXPLICAÇÃO:")
+    print("    - Primeiro par  = posição atual da peça")
+    print("    - Segundo par   = posição de destino")
+    print("")
+    print("  CAPTURAS MÚLTIPLAS:")
+    print("    Continue adicionando posições na mesma jogada")
+    print("    Exemplo: 2,1 4,3 6,5")
+    print("")
+    print("="*65)
+    print("")
     print("Você é o Jogador Servidor (Pretas 'x').")
 
     # Inicializa o jogo
@@ -61,7 +79,23 @@ def main():
     jogador_cliente = Jogador('b', "Jogador Cliente (Brancas)")
     jogo = Damas(jogador_cliente, jogador_servidor)
 
-    enviar_mensagem(sock_dados, "info", "Você é o Jogador Cliente (Brancas 'o'). Você começa.")
+    # Envia instruções e informações iniciais para o cliente
+    instrucoes = "=" * 65 + "\n"
+    instrucoes += "                        INSTRUÇÕES DO JOGO\n"
+    instrucoes += "=" * 65 + "\n\n"
+    instrucoes += "  FORMATO DA JOGADA:\n"
+    instrucoes += "    Digite: linha,coluna linha,coluna\n"
+    instrucoes += "    Exemplo: 2,1 3,2\n\n"
+    instrucoes += "  EXPLICAÇÃO:\n"
+    instrucoes += "    • Primeiro par  = posição atual da peça\n"
+    instrucoes += "    • Segundo par   = posição de destino\n\n"
+    instrucoes += "  CAPTURAS MÚLTIPLAS:\n"
+    instrucoes += "    Continue adicionando posições na mesma jogada\n"
+    instrucoes += "    Exemplo: 2,1 4,3 6,5\n\n"
+    instrucoes += "=" * 65 + "\n\n"
+    instrucoes += "Você é o Jogador Cliente (Brancas 'o'). Você começa."
+
+    enviar_mensagem(sock_dados, "info", instrucoes)
     
     print("\n" + ("-"*21))
     print(jogo.tabuleiro.to_string())
