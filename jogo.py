@@ -154,7 +154,7 @@ class Tabuleiro:
     def casas(self):
         return self._casas
 
-    def _criar_tabuleiro_inicial(self):
+    def criar_tabuleiro_inicial(self):
         """Cria o tabuleiro 8x8 e posiciona as peças iniciais"""
         tabuleiro = []
         for i in range(8):
@@ -221,13 +221,13 @@ class Damas:
         else:
             self._jogador_atual = self._jogador_preto
 
-    def _get_adversario(self):
+    def get_adversario(self):
         if self._jogador_atual == self._jogador_branco:
             return self._jogador_preto
         else:
             return self._jogador_branco
 
-    def _tem_movimentos_validos(self, jogador):
+    def tem_movimentos_validos(self, jogador):
         """Verifica se o jogador possui algum movimento válido disponível"""
         for peca in jogador.pecas:
             if not peca.casa:
@@ -413,7 +413,7 @@ class Damas:
 
         return None
 
-    def _validar_movimento_pedra(self, peca, l_ini, c_ini, l_fin, c_fin):
+    def validar_movimento_pedra(self, peca, l_ini, c_ini, l_fin, c_fin):
         """
         Valida movimento de pedra
         Retorna: (válido: bool, peça_capturada: Peca|None, mensagem_erro: str|None)
@@ -438,7 +438,7 @@ class Damas:
                 return False, None, "Captura inválida. Não há peça adversária para capturar."
         return False, None, "Movimento inválido para pedra."
 
-    def _validar_movimento_dama(self, peca, l_ini, c_ini, l_fin, c_fin):
+    def validar_movimento_dama(self, peca, l_ini, c_ini, l_fin, c_fin):
         """
         Valida movimento de dama (qualquer distância diagonal)
         Retorna: (válido: bool, peça_capturada: Peca|None, mensagem_erro: str|None)

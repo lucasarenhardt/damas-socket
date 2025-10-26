@@ -41,7 +41,7 @@ def receber_mensagem(sock):
 def main():
     """Função principal do cliente - conecta ao servidor e processa jogo"""
     HOST = '127.0.0.1'
-    PORT = 50002
+    PORT = 50000
 
     # Conecta ao servidor
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

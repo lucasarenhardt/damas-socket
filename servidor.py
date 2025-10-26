@@ -41,7 +41,7 @@ def receber_mensagem(sock):
 
 def main():
     """Função principal do servidor - gerencia conexão e loop do jogo"""
-    endereco = ('127.0.0.1', 50002)
+    endereco = ('127.0.0.1', 50000)
     
     # Cria e configura socket servidor
     socket_conexao = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
