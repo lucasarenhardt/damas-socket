@@ -1,5 +1,3 @@
-import os
-
 class Jogador:
     """Representa um jogador do jogo de damas"""
     
@@ -154,7 +152,7 @@ class Tabuleiro:
     def casas(self):
         return self._casas
 
-    def criar_tabuleiro_inicial(self):
+    def _criar_tabuleiro_inicial(self):
         """Cria o tabuleiro 8x8 e posiciona as peças iniciais"""
         tabuleiro = []
         for i in range(8):
@@ -221,13 +219,13 @@ class Damas:
         else:
             self._jogador_atual = self._jogador_preto
 
-    def get_adversario(self):
+    def _get_adversario(self):
         if self._jogador_atual == self._jogador_branco:
             return self._jogador_preto
         else:
             return self._jogador_branco
 
-    def tem_movimentos_validos(self, jogador):
+    def _tem_movimentos_validos(self, jogador):
         """Verifica se o jogador possui algum movimento válido disponível"""
         for peca in jogador.pecas:
             if not peca.casa:
@@ -293,21 +291,21 @@ class Damas:
         # Vitória por captura de todas as peças
         if not self._get_adversario().pecas:
             return self.jogador_atual
-        
+
         jogador_atual_pode_mover = self._tem_movimentos_validos(self.jogador_atual)
         adversario_pode_mover = self._tem_movimentos_validos(self._get_adversario())
-        
+
         # Empate: nenhum jogador pode se mover
         if not jogador_atual_pode_mover and not adversario_pode_mover:
             return "EMPATE"
-        
+
         # Vitória por bloqueio
         if not jogador_atual_pode_mover:
             return self._get_adversario()
-        
+
         if not adversario_pode_mover:
             return self.jogador_atual
-        
+
         return None
 
     def validar_e_mover(self, posicoes):
@@ -343,7 +341,7 @@ class Damas:
             return "A peça selecionada não pertence ao jogador atual."
 
         adversario = self._get_adversario()
-        
+
         # Valida cada movimento da sequência
         movimentos_validados = []
         atual_l, atual_c = l_ini, c_ini
@@ -413,7 +411,7 @@ class Damas:
 
         return None
 
-    def validar_movimento_pedra(self, peca, l_ini, c_ini, l_fin, c_fin):
+    def _validar_movimento_pedra(self, peca, l_ini, c_ini, l_fin, c_fin):
         """
         Valida movimento de pedra
         Retorna: (válido: bool, peça_capturada: Peca|None, mensagem_erro: str|None)
@@ -438,7 +436,7 @@ class Damas:
                 return False, None, "Captura inválida. Não há peça adversária para capturar."
         return False, None, "Movimento inválido para pedra."
 
-    def validar_movimento_dama(self, peca, l_ini, c_ini, l_fin, c_fin):
+    def _validar_movimento_dama(self, peca, l_ini, c_ini, l_fin, c_fin):
         """
         Valida movimento de dama (qualquer distância diagonal)
         Retorna: (válido: bool, peça_capturada: Peca|None, mensagem_erro: str|None)
